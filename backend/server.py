@@ -290,6 +290,45 @@ class SelfModifyingAI:
         except:
             return False
 
+    async def extract_knowledge_from_file(self, file_path: str) -> List[str]:
+        """Извлечение знаний из загруженного файла"""
+        knowledge = []
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Простое извлечение ключевых слов и паттернов
+            if file_path.endswith('.py'):
+                # Ищем импорты
+                imports = re.findall(r'(?:from|import)\s+(\w+)', content)
+                knowledge.extend([f"Python модуль: {imp}" for imp in imports[:10]])
+                
+                # Ищем функции
+                functions = re.findall(r'def\s+(\w+)', content)
+                knowledge.extend([f"Python функция: {func}" for func in functions[:5]])
+                
+            elif file_path.endswith(('.js', '.jsx')):
+                # Ищем импорты ES6
+                imports = re.findall(r'import.*from\s+[\'"]([^\'"]+)[\'"]', content)
+                knowledge.extend([f"JavaScript модуль: {imp}" for imp in imports[:10]])
+                
+            elif file_path.endswith(('.txt', '.md')):
+                # Извлекаем ключевые слова из текста
+                words = re.findall(r'\b[a-zA-Zа-яА-Я]{5,}\b', content)
+                # Берем уникальные слова
+                unique_words = list(set(words))[:20]
+                knowledge.extend([f"Ключевое слово: {word}" for word in unique_words])
+            
+            # Общие паттерны
+            urls = re.findall(r'https?://[^\s]+', content)
+            knowledge.extend([f"URL: {url}" for url in urls[:5]])
+            
+        except Exception as e:
+            knowledge.append(f"Ошибка обработки файла: {str(e)}")
+        
+        return knowledge
+
     async def generate_response(self, user_message: str) -> AIResponse:
         """Генерация ответа на русском языке"""
         # Поиск информации в интернете
